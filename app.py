@@ -16,7 +16,7 @@ def get_connection():
 
 @app.route("/")
 def home():
-    return {"message": "Notes API is running"}
+    return {"message": "Notes API v2 deployed automatically"}
 
 
 @app.route("/health")
