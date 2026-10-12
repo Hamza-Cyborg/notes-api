@@ -16,7 +16,9 @@ def get_connection():
 
 @app.route("/")
 def home():
-    return {"message": "Notes API v2 deployed automatically"}
+    return {
+        "message": "Notes API v2 deployed automatically"
+    }
 
 
 @app.route("/health")
@@ -25,7 +27,9 @@ def health():
         conn = get_connection()
         conn.close()
 
-        return {"status": "healthy"}
+        return {
+            "status": "healthy"
+        }
 
     except Exception as e:
         return {
@@ -49,10 +53,13 @@ def init_db():
     """)
 
     conn.commit()
+
     cur.close()
     conn.close()
 
-    return {"message": "Database initialized"}
+    return {
+        "message": "Database initialized"
+    }
 
 
 @app.route("/notes", methods=["GET"])
@@ -61,23 +68,25 @@ def get_notes():
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, title, content FROM notes")
+    cur.execute(
+        "SELECT id, title, content FROM notes ORDER BY id"
+    )
 
     rows = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    data = []
+    notes = []
 
     for row in rows:
-        data.append({
+        notes.append({
             "id": row[0],
             "title": row[1],
             "content": row[2]
         })
 
-    return jsonify(data)
+    return jsonify(notes)
 
 
 @app.route("/notes", methods=["POST"])
@@ -92,7 +101,10 @@ def create_note():
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO notes(title, content) VALUES (%s, %s)",
+        """
+        INSERT INTO notes(title, content)
+        VALUES (%s, %s)
+        """,
         (title, content)
     )
 
@@ -101,8 +113,65 @@ def create_note():
     cur.close()
     conn.close()
 
-    return {"message": "Note created"}
+    return {
+        "message": "Note created"
+    }
+
+
+@app.route("/notes/<int:note_id>", methods=["PUT"])
+def update_note(note_id):
+
+    body = request.get_json()
+
+    title = body["title"]
+    content = body["content"]
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        UPDATE notes
+        SET title = %s,
+            content = %s
+        WHERE id = %s
+        """,
+        (title, content, note_id)
+    )
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return {
+        "message": f"Note {note_id} updated"
+    }
+
+
+@app.route("/notes/<int:note_id>", methods=["DELETE"])
+def delete_note(note_id):
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "DELETE FROM notes WHERE id = %s",
+        (note_id,)
+    )
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return {
+        "message": f"Note {note_id} deleted"
+    }
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
